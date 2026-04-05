@@ -1,0 +1,117 @@
+import streamlit as st
+import pandas as pd
+
+# ----------------------------
+# Page setup
+# ----------------------------
+st.set_page_config(page_title="IITA 2025 KPI Dashboard", layout="wide")
+
+# ----------------------------
+# Load Excel files
+# ----------------------------
+excel1 = pd.read_excel("excel1.xlsx", engine="openpyxl")  # KPI by Nr
+excel2 = pd.read_excel("excel2.xlsx", engine="openpyxl")  # Aggregated
+excel3 = pd.read_excel("excel3.xlsx", engine="openpyxl")  # KPI Nr 2025-2030
+excel4 = pd.read_excel("excel4.xlsx", engine="openpyxl")  # KPI Nr by Program for 2025
+
+
+# TOP BANNER WITH LOGO AND TITLE
+st.image("IITA_logo.png", width=250)
+st.markdown("""
+<div style="background-color:#ffffff; padding:15px;">
+    <h1 style="color:#00891a; margin:10px; font-size:28px; text-align:center;">
+        IITA Agricultural KPI Dashboard
+    </h1>
+</div>
+""", unsafe_allow_html=True)
+
+st.header("Programs and Services")
+
+
+# ----------------------------
+# CSS for uniform tab style
+# ----------------------------
+st.markdown("""
+<style>
+div[data-baseweb="tab-list"] button {
+    font-size: 16px;
+    font-family: 'Arial, sans-serif';
+    padding: 8px 12px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ----------------------------
+# Main Tabs
+# ----------------------------
+main_tab = st.tabs([
+    "2025 IITA Programs Output KPIs", 
+    "2025 IITA Service Unit Output KPIs"
+])
+
+# ----------------------------
+# Programs Output KPIs Tab
+# ----------------------------
+# ----------------------------
+# Programs Output KPIs Tab
+# ----------------------------
+with main_tab[0]:
+    st.subheader("📈 Programs Output KPIs 2025")
+    st.write("Select KPI view below:")
+
+    programs_subtab = st.tabs([
+        "KPI by NR Aggregated",  # formerly research
+        "Research, Training, Product Development",  # formerly Training tab
+        "Recognition/Reputation, Societal Impact and Inclusivity"  # Product Development
+    ])
+    
+    # KPI by NR Aggregated
+    with programs_subtab[0]:
+        st.write(" 🧮 KPI by Number Aggregated |")
+        st.dataframe(excel2)
+        
+    # Research, Training, Product Development       
+    with programs_subtab[1]:
+        st.write("🔬 Research | 🎓 Training | 🛠️ Product Development ")
+        subtab_rtpd = st.tabs([
+            "KPI Nr 2025-2030",
+            "KPI Nr by Program for 2025",
+            "KPI FTE By Program",
+            "KPI $ By Program"
+        ])
+        
+        with subtab_rtpd[0]:
+            st.write("KPI Nr 2025-2030 content here")
+            st.dataframe(excel3)
+        with subtab_rtpd[1]:
+            st.write("KPI Nr by Program for 2025 content here")
+            st.dataframe(excel4)
+        with subtab_rtpd[2]:
+            st.write("KPI FTE By Program content here")
+        with subtab_rtpd[3]:
+            st.write("KPI $ By Program content here")
+        
+    # Recognition/Reputation, Societal Impact and Inclusivity
+    with programs_subtab[2]:
+        st.write("🏆 Recognition / Reputation |🌱 Societal Impact| 🤝 Inclusivity|")
+        rec_tabs = st.tabs([
+            "Recognition / Reputation",
+            "Societal Impact",
+            "Inclusivity"
+        ])
+
+        with rec_tabs[0]:
+            st.write("Coming Soon: Recognition / Reputation content")
+        with rec_tabs[1]:
+            st.write("Coming Soon: Societal Impact content")
+        with rec_tabs[2]:
+            st.write("Coming Soon: Inclusivity content")
+
+# ----------------------------
+# Service Unit Output KPIs Tab
+# ----------------------------
+with main_tab[1]:
+    st.write("🧩2025 IITA Service Unit Output KPIs")
+    st.dataframe(excel1)
+    
+   
