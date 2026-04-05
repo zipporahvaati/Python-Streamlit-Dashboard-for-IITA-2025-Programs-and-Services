@@ -167,7 +167,7 @@ with main_tab[1]:
             dict(selector='th', props=[('text-align', 'center'), ('font-size', '13pt')])
         ])
 
-        st.dataframe(styled_df, height=400)
+        st.write(styled_df)
 
     # ----------------------------
     # Right column: Pie chart with bordered card
