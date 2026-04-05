@@ -160,14 +160,7 @@ with main_tab[1]:
             return ''
 
         # Apply styling to the Excel table
-        styled_df = excel1.style.applymap(
-            highlight_target, subset=['Meeting or Exceeding  Target']
-        ).set_properties(**{'text-align': 'center', 'font-size': '12pt'}
-        ).set_table_styles([
-            dict(selector='th', props=[('text-align', 'center'), ('font-size', '13pt')])
-        ])
-
-        st.write(styled_df)
+        st.dataframe(excel1, height=400)
 
     # ----------------------------
     # Right column: Pie chart with bordered card
@@ -190,7 +183,7 @@ with main_tab[1]:
             excel1,
             names='Meeting or Exceeding  Target',
             title="Overall Target Achievement",
-            color_discrete_sequence=px.colors.sequential.Viridis
+            color_discrete_sequence=px.colors.sequential.Oranges
         )
         st.plotly_chart(fig)
         
