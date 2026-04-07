@@ -1,45 +1,33 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import plotly.express as px
+import numpy as np
 
 # ----------------------------
 # Page setup
-
 # ----------------------------
 st.set_page_config(page_title="IITA 2025 KPI Dashboard", layout="wide")
 
 # ----------------------------
-# Load Excel files
+# Top Banner
 # ----------------------------
-excel1 = pd.read_excel("excel1.xlsx", engine="openpyxl")  # KPI by Nr
-excel2 = pd.read_excel("excel2.xlsx", engine="openpyxl")  # Aggregated
-excel3 = pd.read_excel("excel3.xlsx", engine="openpyxl")  # KPI Nr 2025-2030
-excel4 = pd.read_excel("excel4.xlsx", engine="openpyxl")  # KPI Nr by Program for 2025
-
-
-# TOP BANNER WITH LOGO AND TITLE
-st.image("IITA_logo.png", width=200,output_format="PNG")
+st.image("IITA_logo.png", width=200)
 st.markdown("""
 <div style="background-color:#ffffff; padding:15px;">
     <h1 style="color:#00891a; margin:10px; font-size:28px; text-align:center;">
-        IITA Agricultural KPI Dashboard
+        International Institute of Tropical Agriculture Dashboard
     </h1>
 </div>
 """, unsafe_allow_html=True)
-
-st.header("Programs and Services")
-
+st.write("Programs and Service output KPIs")
 
 # ----------------------------
-# CSS for uniform tab style
+# CSS for tabs
 # ----------------------------
 st.markdown("""
 <style>
-/* Make Streamlit tabs look like buttons */
 div[data-baseweb="tab-list"] button {
-    background-color: #00891a;   /* green button */
+    background-color: #00891a; 
     color: white;
     border-radius: 8px;
     padding: 10px 18px;
@@ -48,191 +36,208 @@ div[data-baseweb="tab-list"] button {
     margin-right: 8px;
     transition: 0.2s;
 }
-
-/* Remove focus outline */
-div[data-baseweb="tab-list"] button:focus {
-    outline: none;
-}
-
-/* Highlight selected tab */
-div[data-baseweb="tab-list"] button[selected] {
-    background-color: #005500;   /* darker green for selected */
-}
+div[data-baseweb="tab-list"] button:focus { outline: none; }
+div[data-baseweb="tab-list"] button[selected] { background-color: #005500; }
 </style>
-""",
-    unsafe_allow_html=True)
-
+""", unsafe_allow_html=True)
 
 # ----------------------------
 # Main Tabs
 # ----------------------------
 main_tab = st.tabs([
-    "2025 IITA Programs Output KPIs", 
+    "2025 IITA Programs Output KPIs",
     "2025 IITA Service Unit Output KPIs"
 ])
 
+# ============================
 # Programs Output KPIs Tab
-# ----------------------------
-# ----------------------------
-# Programs Output KPIs Tab
-# ----------------------------
+# ============================
 with main_tab[0]:
-    #st.subheader("📈 Programs Output KPIs 2025")
-    st.write("Select KPI view below:")
+    # Load Excel2 (Aggregated)
+    excel2 = pd.read_excel("excel2.xlsx", engine="openpyxl")
+    excel2.columns = [str(c).strip().replace('\n',' ').replace('\r','') for c in excel2.columns]
 
-    # ----------------------------
-    # Define subtabs
-    # ----------------------------
-    programs_subtab = st.tabs([
-        "KPI by NR Aggregated",
-        "Research, Training, Product Development",
-        "Recognition/Reputation, Societal Impact and Inclusivity"
-    ])
+    # Fill down Category
+    if 'Unnamed: 0' in excel2.columns:
+        excel2['Category'] = excel2['Unnamed: 0'].ffill()
+    else:
+        excel2['Category'] = 'All'
 
-    # ----------------------------
-    # KPI by NR Aggregated: table + heatmap
-    # ----------------------------
-    with programs_subtab[0]:
-        #st.write(" 🧮 KPI by Number Aggregated |")
-        
-        # Create two columns: table | heatmap
-        col_table, col_heatmap = st.columns([2.0, 2.0])
+    # Ensure numeric columns
+    numeric_cols2 = ['Annual Target', '2025 Actual value', '% Female (where applicable)']
+    for col in numeric_cols2:
+        if col in excel2.columns:
+            excel2[col] = pd.to_numeric(excel2[col], errors='coerce')
 
-        # Left: Excel table
-        with col_table:
-            st.subheader("📋 KPI Table")
-            st.dataframe(excel2, height=400)
+    # Show table and heatmap side by side
+    col_table, col_heatmap = st.columns([2, 2])
 
-        # Right: Heatmap
-        with col_heatmap:
-            st.subheader("🔥 KPI Heatmap")
-            
-            df_heat = excel2.copy()
+    # --- Table ---
+    with col_table:
+        st.subheader("📋 KPI Table")
 
-            # Fill down category
-            if 'Unnamed: 0' in df_heat.columns:
-                df_heat['Category'] = df_heat['Unnamed: 0'].ffill()
-            else:
-                df_heat['Category'] = 'All'
+        def iita_highlight(val):
+            try:
+                val = float(val)
+                if val >= 0.75: return 'background-color: #00891a; color: white; font-weight: bold'
+                elif val >= 0.5: return 'background-color: #FFA500; color: black; font-weight: bold'
+                elif val > 0: return 'background-color: #FFE5B4; color: black'
+                else: return ''
+            except:
+                return ''
 
-            # Ensure numeric columns
-            for col in ['Annual Target', '2025 Actual value', '% Female (where applicable)']:
-                df_heat[col] = pd.to_numeric(df_heat[col], errors='coerce')
+        format_dict2 = {
+            'Annual Target': "{:.2f}",
+            '2025 Actual value': "{:.2f}",
+            '% Female (where applicable)': "{:.0%}"
+        }
 
-            # Pivot for heatmap
-            heatmap_data = df_heat.pivot(index='KPI Nr', columns='Category', values='2025 Actual value')
+        st.dataframe(
+            excel2.style.applymap(iita_highlight, subset=numeric_cols2)
+                         .format(format_dict2),
+            height=500,
+            use_container_width=True
+        )
 
-            # Plot heatmap
+    # --- Heatmap ---
+    with col_heatmap:
+        st.subheader("🔥 KPI Heatmap")
+        if '2025 Actual value' not in excel2.columns or 'KPI Nr' not in excel2.columns:
+            st.error("Columns '2025 Actual value' or 'KPI Nr' not found! Check Excel headers.")
+            st.write("Current columns:", excel2.columns.tolist())
+        else:
+            heatmap_data = excel2.pivot(index='KPI Nr', columns='Category', values='2025 Actual value')
+            min_val = np.nanmin(heatmap_data.values)
+            max_val = np.nanmax(heatmap_data.values)
+
             fig = px.imshow(
                 heatmap_data,
                 text_auto=True,
                 aspect="auto",
-                color_continuous_scale='RdYlGn'
+                color_continuous_scale=['#FFE5B4', '#FFA500', '#00891a'],
+                zmin=min_val,
+                zmax=max_val
             )
-            fig.update_layout(
-                xaxis_title="Category",
-                yaxis_title="KPI Number"
-            )
+            fig.update_layout(xaxis_title="Category", yaxis_title="KPI Number")
             st.plotly_chart(fig, use_container_width=True)
 
-    # ----------------------------
-    # Research, Training, Product Development
-    # ----------------------------
-    with programs_subtab[1]:
-        st.write("🔬 Research | 🎓 Training | 🛠️ Product Development ")
+    # Remaining subtabs
+    programs_subtab = st.tabs([
+        "Research, Training, Product Development",
+        "Recognition/Reputation, Societal Impact and Inclusivity"
+    ])
+
+    # --- Research/Training/Product Development ---
+    with programs_subtab[0]:
         subtab_rtpd = st.tabs([
             "KPI Nr 2025-2030",
             "KPI Nr by Program for 2025",
             "KPI FTE By Program",
             "KPI $ By Program"
         ])
-        
+
+        # --- Excel3 ---
         with subtab_rtpd[0]:
-            #st.write("KPI Nr 2025-2030 content here")
-            st.dataframe(excel3)
+            excel3 = pd.read_excel("excel3.xlsx", engine="openpyxl")
+            excel3 = excel3.dropna(how='all').dropna(axis=1, how='all').reset_index(drop=True)
+            excel3.columns = [str(c).strip().replace('\n',' ') for c in excel3.columns]
+
+            numeric_cols3 = [c for c in excel3.columns if c not in ['KPI Nr','KPI Metrics']]
+
+            for col in numeric_cols3:
+                excel3[col] = pd.to_numeric(excel3[col], errors='coerce')
+
+            def iita_highlight3(val):
+                try:
+                    val = float(val)
+                    if val >= 0.75: return 'background-color: #00891a; color: white; font-weight: bold'
+                    elif val >= 0.5: return 'background-color: #FFA500; color: black; font-weight: bold'
+                    elif val > 0: return 'background-color: #FFE5B4; color: black'
+                    else: return ''
+                except: return ''
+
+            format_dict3 = {col: "{:.2f}" for col in numeric_cols3}
+
+            st.dataframe(
+                excel3.style.applymap(iita_highlight3, subset=numeric_cols3)
+                             .format(format_dict3),
+                use_container_width=True,
+                height=500
+            )
+
+        # --- Excel4 ---
         with subtab_rtpd[1]:
-            #st.write("KPI Nr by Program for 2025 content here")
-            st.dataframe(excel4)
+            excel4 = pd.read_excel("excel4.xlsx", engine="openpyxl")
+            excel4 = excel4.dropna(how='all').dropna(axis=1, how='all').reset_index(drop=True)
+            excel4.columns = [str(c).strip().replace('\n',' ') for c in excel4.columns]
+
+            numeric_cols4 = [c for c in excel4.columns if c not in ['KPI Nr','KPI Metrics']]
+            for col in numeric_cols4:
+                excel4[col] = pd.to_numeric(excel4[col], errors='coerce')
+
+            def iita_highlight4(val):
+                try:
+                    val = float(val)
+                    if val >= 0.75: return 'background-color: #00891a; color: white; font-weight: bold'
+                    elif val >= 0.5: return 'background-color: #FFA500; color: black; font-weight: bold'
+                    elif val > 0: return 'background-color: #FFE5B4; color: black'
+                    else: return ''
+                except: return ''
+
+            format_dict4 = {col: "{:.2f}" for col in numeric_cols4}
+
+            st.dataframe(
+                excel4.style.applymap(iita_highlight4, subset=numeric_cols4)
+                      .format(format_dict4),
+                use_container_width=True,
+                height=500
+            )
+
         with subtab_rtpd[2]:
-            st.write("KPI FTE By Program content here")
+            st.write("KPI FTE By Program content coming soon")
         with subtab_rtpd[3]:
-            st.write("KPI $ By Program content here")
-    
-    # ----------------------------
-    # Recognition/Reputation, Societal Impact and Inclusivity
-    # ----------------------------
-    with programs_subtab[2]:
-        st.write("🏆 Recognition / Reputation |🌱 Societal Impact| 🤝 Inclusivity|")
+            st.write("KPI $ By Program content coming soon")
+
+    # --- Recognition/Societal Impact/Inclusivity ---
+    with programs_subtab[1]:
         rec_tabs = st.tabs([
             "Recognition / Reputation",
             "Societal Impact",
             "Inclusivity"
         ])
+        with rec_tabs[0]: st.write("Coming Soon")
+        with rec_tabs[1]: st.write("Coming Soon")
+        with rec_tabs[2]: st.write("Coming Soon")
 
-        with rec_tabs[0]:
-            st.write("Coming Soon: Recognition / Reputation content")
-        with rec_tabs[1]:
-            st.write("Coming Soon: Societal Impact content")
-        with rec_tabs[2]:
-            st.write("Coming Soon: Inclusivity content")
-
+# ============================
 # Service Unit Output KPIs Tab
-# ----------------------------
+# ============================
 with main_tab[1]:
-    # Load Excel
     excel1 = pd.read_excel("excel1.xlsx", engine="openpyxl")
+    excel1 = excel1.dropna(how='all').dropna(axis=1, how='all').reset_index(drop=True)
+    excel1.columns = [str(c).strip().replace('\n',' ') for c in excel1.columns]
 
-    st.subheader("🧩 2025 IITA Service Unit Output KPIs")
+    percent_cols = [c for c in excel1.columns if 'Target' in c or 'Actual' in c]
+    for col in percent_cols:
+        excel1[col] = pd.to_numeric(excel1[col], errors='coerce')
 
-    # Create two columns
-    col1, col2 = st.columns([2.0, 2.0])
-
-    # ----------------------------
-    # Left column: Excel table
-    # ----------------------------
-    with col1:
-        def highlight_target(val):
-            color = ""  # default: no color
-
-            if isinstance(val, str):
-                if "Meeting at least 75%" in val:
-                    color = "#8BC34A"  # green
-                elif "Meeting at least 50%" in val:
-                    color = "#FFEB3B"  # yellow
-                elif val.strip() != "":  # any other non-empty string
-                    color = "#FF7043"  # orange/red
-
-            if color:  # only return CSS if color is set
-                return f'background-color: {color}; font-weight: bold'
+    def iita_highlight(val):
+        try:
+            val = float(val)
+            if val >= 0.75: return 'background-color: #00891a; color: white; font-weight: bold'
+            elif val >= 0.5: return 'background-color: #FFA500; color: black; font-weight: bold'
+            elif val > 0: return 'background-color: #FFE5B4; color: black'
+            else: return ''
+        except:
             return ''
 
-        # Apply styling to the Excel table
-        st.dataframe(excel1, height=400)
+    header_style = [{'selector': 'th',
+                     'props': 'background-color: #00891a; color: white; font-weight: bold; text-align: center;'}]
 
-    # ----------------------------
-    # Right column: Pie chart with bordered card
-    # ----------------------------
-    with col2:
-        st.markdown(
-            """
-            <div style="
-                border: 2px solid #00891a;
-                border-radius: 10px;
-                padding: 10px;
-                background-color: #f9f9f9;
-            ">
-            """,
-            unsafe_allow_html=True
-        )
-        
-        # Pie chart inside the bordered div
-        fig = px.pie(
-            excel1,
-            names='Meeting or Exceeding  Target',
-            title="Overall Target Achievement",
-            color_discrete_sequence=px.colors.sequential.Oranges
-        )
-        st.plotly_chart(fig)
-        
-        # Close the div
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.dataframe(
+        excel1.style.applymap(iita_highlight, subset=percent_cols)
+                    .format({col: "{:.0%}" for col in percent_cols})
+                    .set_table_styles(header_style),
+        use_container_width=True,
+        height=500
+    )
