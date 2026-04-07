@@ -53,26 +53,24 @@ main_tab = st.tabs([
 # Programs Output KPIs Tab
 # ============================
 with main_tab[0]:
-    # Load Excel2 (Aggregated)
+
+    # --- Load Excel2 ---
     excel2 = pd.read_excel("excel2.xlsx", engine="openpyxl")
     excel2.columns = [str(c).strip().replace('\n',' ').replace('\r','') for c in excel2.columns]
 
-    # Fill down Category
     if 'Unnamed: 0' in excel2.columns:
         excel2['Category'] = excel2['Unnamed: 0'].ffill()
     else:
         excel2['Category'] = 'All'
 
-    # Ensure numeric columns
-    numeric_cols2 = ['Annual Target', '2025 Actual value', '% Female (where applicable)']
+    numeric_cols2 = [col for col in ['Annual Target', '2025 Actual value', '% Female (where applicable)'] if col in excel2.columns]
     for col in numeric_cols2:
-        if col in excel2.columns:
-            excel2[col] = pd.to_numeric(excel2[col], errors='coerce')
+        excel2[col] = pd.to_numeric(excel2[col], errors='coerce')
 
-    # Show table and heatmap side by side
+    # --- Table and Heatmap ---
     col_table, col_heatmap = st.columns([2, 2])
 
-    # --- Table ---
+    # Table
     with col_table:
         st.subheader("📋 KPI Table")
 
@@ -83,8 +81,7 @@ with main_tab[0]:
                 elif val >= 0.5: return 'background-color: #FFA500; color: black; font-weight: bold'
                 elif val > 0: return 'background-color: #FFE5B4; color: black'
                 else: return ''
-            except:
-                return ''
+            except: return ''
 
         format_dict2 = {
             'Annual Target': "{:.2f}",
@@ -92,20 +89,20 @@ with main_tab[0]:
             '% Female (where applicable)': "{:.0%}"
         }
 
-        st.dataframe(
-            excel2.style.applymap(iita_highlight, subset=numeric_cols2)
-                         .format(format_dict2),
-            height=500,
-            use_container_width=True
-        )
+        if numeric_cols2:
+            st.dataframe(
+                excel2.style.applymap(iita_highlight, subset=numeric_cols2)
+                             .format(format_dict2),
+                height=500,
+                use_container_width=True
+            )
+        else:
+            st.dataframe(excel2, height=500, use_container_width=True)
 
-    # --- Heatmap ---
+    # Heatmap
     with col_heatmap:
         st.subheader("🔥 KPI Heatmap")
-        if '2025 Actual value' not in excel2.columns or 'KPI Nr' not in excel2.columns:
-            st.error("Columns '2025 Actual value' or 'KPI Nr' not found! Check Excel headers.")
-            st.write("Current columns:", excel2.columns.tolist())
-        else:
+        if '2025 Actual value' in excel2.columns and 'KPI Nr' in excel2.columns:
             heatmap_data = excel2.pivot(index='KPI Nr', columns='Category', values='2025 Actual value')
             min_val = np.nanmin(heatmap_data.values)
             max_val = np.nanmax(heatmap_data.values)
@@ -120,8 +117,10 @@ with main_tab[0]:
             )
             fig.update_layout(xaxis_title="Category", yaxis_title="KPI Number")
             st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.write("Heatmap cannot be generated. Missing columns.")
 
-    # Remaining subtabs
+    # --- Programs Subtabs ---
     programs_subtab = st.tabs([
         "Research, Training, Product Development",
         "Recognition/Reputation, Societal Impact and Inclusivity"
@@ -136,14 +135,12 @@ with main_tab[0]:
             "KPI $ By Program"
         ])
 
-        # --- Excel3 ---
+        # Excel3
         with subtab_rtpd[0]:
             excel3 = pd.read_excel("excel3.xlsx", engine="openpyxl")
             excel3 = excel3.dropna(how='all').dropna(axis=1, how='all').reset_index(drop=True)
             excel3.columns = [str(c).strip().replace('\n',' ') for c in excel3.columns]
-
             numeric_cols3 = [c for c in excel3.columns if c not in ['KPI Nr','KPI Metrics']]
-
             for col in numeric_cols3:
                 excel3[col] = pd.to_numeric(excel3[col], errors='coerce')
 
@@ -157,23 +154,26 @@ with main_tab[0]:
                 except: return ''
 
             format_dict3 = {col: "{:.2f}" for col in numeric_cols3}
+            if numeric_cols3:
+                st.dataframe(
+                    excel3.style.applymap(iita_highlight3, subset=numeric_cols3)
+                                 .format(format_dict3),
+                    use_container_width=True,
+                    height=500
+                )
+            else:
+                st.dataframe(excel3, use_container_width=True, height=500)
 
-            st.dataframe(
-                excel3.style.applymap(iita_highlight3, subset=numeric_cols3)
-                             .format(format_dict3),
-                use_container_width=True,
-                height=500
-            )
-
-        # --- Excel4 ---
+        # Excel4 (Formatted)
         with subtab_rtpd[1]:
             excel4 = pd.read_excel("excel4.xlsx", engine="openpyxl")
             excel4 = excel4.dropna(how='all').dropna(axis=1, how='all').reset_index(drop=True)
             excel4.columns = [str(c).strip().replace('\n',' ') for c in excel4.columns]
-
             numeric_cols4 = [c for c in excel4.columns if c not in ['KPI Nr','KPI Metrics']]
             for col in numeric_cols4:
                 excel4[col] = pd.to_numeric(excel4[col], errors='coerce')
+
+            format_dict4 = {col: "{:.2f}" for col in numeric_cols4}
 
             def iita_highlight4(val):
                 try:
@@ -184,19 +184,18 @@ with main_tab[0]:
                     else: return ''
                 except: return ''
 
-            format_dict4 = {col: "{:.2f}" for col in numeric_cols4}
+            if numeric_cols4:
+                st.dataframe(
+                    excel4.style.applymap(iita_highlight4, subset=numeric_cols4)
+                          .format(format_dict4),
+                    use_container_width=True,
+                    height=500
+                )
+            else:
+                st.dataframe(excel4, use_container_width=True, height=500)
 
-            st.dataframe(
-                excel4.style.applymap(iita_highlight4, subset=numeric_cols4)
-                      .format(format_dict4),
-                use_container_width=True,
-                height=500
-            )
-
-        with subtab_rtpd[2]:
-            st.write("KPI FTE By Program content coming soon")
-        with subtab_rtpd[3]:
-            st.write("KPI $ By Program content coming soon")
+        with subtab_rtpd[2]: st.write("KPI FTE By Program content coming soon")
+        with subtab_rtpd[3]: st.write("KPI $ By Program content coming soon")
 
     # --- Recognition/Societal Impact/Inclusivity ---
     with programs_subtab[1]:
@@ -234,10 +233,13 @@ with main_tab[1]:
     header_style = [{'selector': 'th',
                      'props': 'background-color: #00891a; color: white; font-weight: bold; text-align: center;'}]
 
-    st.dataframe(
-        excel1.style.applymap(iita_highlight, subset=percent_cols)
-                    .format({col: "{:.0%}" for col in percent_cols})
-                    .set_table_styles(header_style),
-        use_container_width=True,
-        height=500
-    )
+    if percent_cols:
+        st.dataframe(
+            excel1.style.applymap(iita_highlight, subset=percent_cols)
+                        .format({col: "{:.0%}" for col in percent_cols})
+                        .set_table_styles(header_style),
+            use_container_width=True,
+            height=500
+        )
+    else:
+        st.dataframe(excel1, use_container_width=True, height=500)
