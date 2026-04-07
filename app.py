@@ -91,7 +91,7 @@ with main_tab[0]:
 
         if numeric_cols2:
             st.dataframe(
-                excel2.style.applymap(iita_highlight, subset=numeric_cols2)
+                excel2.style.map(iita_highlight, subset=numeric_cols2)
                              .format(format_dict2),
                 height=500,
                 use_container_width=True
@@ -154,9 +154,10 @@ with main_tab[0]:
                 except: return ''
 
             format_dict3 = {col: "{:.2f}" for col in numeric_cols3}
+
             if numeric_cols3:
                 st.dataframe(
-                    excel3.style.applymap(iita_highlight3, subset=numeric_cols3)
+                    excel3.style.map(iita_highlight3, subset=numeric_cols3)
                                  .format(format_dict3),
                     use_container_width=True,
                     height=500
@@ -164,7 +165,7 @@ with main_tab[0]:
             else:
                 st.dataframe(excel3, use_container_width=True, height=500)
 
-        # Excel4 (Formatted)
+        # Excel4
         with subtab_rtpd[1]:
             excel4 = pd.read_excel("excel4.xlsx", engine="openpyxl")
             excel4 = excel4.dropna(how='all').dropna(axis=1, how='all').reset_index(drop=True)
@@ -186,7 +187,7 @@ with main_tab[0]:
 
             if numeric_cols4:
                 st.dataframe(
-                    excel4.style.applymap(iita_highlight4, subset=numeric_cols4)
+                    excel4.style.map(iita_highlight4, subset=numeric_cols4)
                           .format(format_dict4),
                     use_container_width=True,
                     height=500
