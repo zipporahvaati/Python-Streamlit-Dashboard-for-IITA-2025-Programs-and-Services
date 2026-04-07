@@ -6,6 +6,7 @@ import plotly.express as px
 
 # ----------------------------
 # Page setup
+
 # ----------------------------
 st.set_page_config(page_title="IITA 2025 KPI Dashboard", layout="wide")
 
@@ -19,7 +20,7 @@ excel4 = pd.read_excel("excel4.xlsx", engine="openpyxl")  # KPI Nr by Program fo
 
 
 # TOP BANNER WITH LOGO AND TITLE
-st.image("IITA_logo.png", width=250)
+st.image("IITA_logo.png", width=200,output_format="PNG")
 st.markdown("""
 <div style="background-color:#ffffff; padding:15px;">
     <h1 style="color:#00891a; margin:10px; font-size:28px; text-align:center;">
@@ -70,28 +71,73 @@ main_tab = st.tabs([
     "2025 IITA Service Unit Output KPIs"
 ])
 
-# ----------------------------
 # Programs Output KPIs Tab
 # ----------------------------
 # ----------------------------
 # Programs Output KPIs Tab
 # ----------------------------
 with main_tab[0]:
-    st.subheader("📈 Programs Output KPIs 2025")
+    #st.subheader("📈 Programs Output KPIs 2025")
     st.write("Select KPI view below:")
 
+    # ----------------------------
+    # Define subtabs
+    # ----------------------------
     programs_subtab = st.tabs([
-        "KPI by NR Aggregated",  # formerly research
-        "Research, Training, Product Development",  # formerly Training tab
-        "Recognition/Reputation, Societal Impact and Inclusivity"  # Product Development
+        "KPI by NR Aggregated",
+        "Research, Training, Product Development",
+        "Recognition/Reputation, Societal Impact and Inclusivity"
     ])
-    
-    # KPI by NR Aggregated
+
+    # ----------------------------
+    # KPI by NR Aggregated: table + heatmap
+    # ----------------------------
     with programs_subtab[0]:
-        st.write(" 🧮 KPI by Number Aggregated |")
-        st.dataframe(excel2)
+        #st.write(" 🧮 KPI by Number Aggregated |")
         
-    # Research, Training, Product Development       
+        # Create two columns: table | heatmap
+        col_table, col_heatmap = st.columns([2.0, 2.0])
+
+        # Left: Excel table
+        with col_table:
+            st.subheader("📋 KPI Table")
+            st.dataframe(excel2, height=400)
+
+        # Right: Heatmap
+        with col_heatmap:
+            st.subheader("🔥 KPI Heatmap")
+            
+            df_heat = excel2.copy()
+
+            # Fill down category
+            if 'Unnamed: 0' in df_heat.columns:
+                df_heat['Category'] = df_heat['Unnamed: 0'].ffill()
+            else:
+                df_heat['Category'] = 'All'
+
+            # Ensure numeric columns
+            for col in ['Annual Target', '2025 Actual value', '% Female (where applicable)']:
+                df_heat[col] = pd.to_numeric(df_heat[col], errors='coerce')
+
+            # Pivot for heatmap
+            heatmap_data = df_heat.pivot(index='KPI Nr', columns='Category', values='2025 Actual value')
+
+            # Plot heatmap
+            fig = px.imshow(
+                heatmap_data,
+                text_auto=True,
+                aspect="auto",
+                color_continuous_scale='RdYlGn'
+            )
+            fig.update_layout(
+                xaxis_title="Category",
+                yaxis_title="KPI Number"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+    # ----------------------------
+    # Research, Training, Product Development
+    # ----------------------------
     with programs_subtab[1]:
         st.write("🔬 Research | 🎓 Training | 🛠️ Product Development ")
         subtab_rtpd = st.tabs([
@@ -102,17 +148,19 @@ with main_tab[0]:
         ])
         
         with subtab_rtpd[0]:
-            st.write("KPI Nr 2025-2030 content here")
+            #st.write("KPI Nr 2025-2030 content here")
             st.dataframe(excel3)
         with subtab_rtpd[1]:
-            st.write("KPI Nr by Program for 2025 content here")
+            #st.write("KPI Nr by Program for 2025 content here")
             st.dataframe(excel4)
         with subtab_rtpd[2]:
             st.write("KPI FTE By Program content here")
         with subtab_rtpd[3]:
             st.write("KPI $ By Program content here")
-        
+    
+    # ----------------------------
     # Recognition/Reputation, Societal Impact and Inclusivity
+    # ----------------------------
     with programs_subtab[2]:
         st.write("🏆 Recognition / Reputation |🌱 Societal Impact| 🤝 Inclusivity|")
         rec_tabs = st.tabs([
@@ -128,7 +176,6 @@ with main_tab[0]:
         with rec_tabs[2]:
             st.write("Coming Soon: Inclusivity content")
 
-# -# ----------------------------
 # Service Unit Output KPIs Tab
 # ----------------------------
 with main_tab[1]:
@@ -138,7 +185,7 @@ with main_tab[1]:
     st.subheader("🧩 2025 IITA Service Unit Output KPIs")
 
     # Create two columns
-    col1, col2 = st.columns([2.5, 1.5])
+    col1, col2 = st.columns([2.0, 2.0])
 
     # ----------------------------
     # Left column: Excel table
