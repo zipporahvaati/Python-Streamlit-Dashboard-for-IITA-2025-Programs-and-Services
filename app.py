@@ -236,7 +236,7 @@ with main_tab[1]:
 
     if percent_cols:
         st.dataframe(
-            excel1.style.applymap(iita_highlight, subset=percent_cols)
+            excel1.style.map(iita_highlight, subset=percent_cols)
                         .format({col: "{:.0%}" for col in percent_cols})
                         .set_table_styles(header_style),
             use_container_width=True,
